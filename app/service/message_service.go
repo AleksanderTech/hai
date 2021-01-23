@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"bitbucket.org/oaroz/hai/app/domain"
+	"bitbucket.org/oaroz/hai/app/repository"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -16,10 +17,10 @@ type MessageService interface {
 }
 
 type messageService struct {
-	dbCon *pgxpool.Pool
+	repo repository.MessageRepository
 }
 
-func NewService(dbCon *pgxpool.Pool) MessageService {
+func NewMessageService(dbCon *pgxpool.Pool) MessageService {
 	return messageService{dbCon: dbCon}
 }
 

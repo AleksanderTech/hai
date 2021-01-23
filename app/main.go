@@ -7,6 +7,7 @@ import (
 
 	"bitbucket.org/oaroz/hai/app/config"
 	"bitbucket.org/oaroz/hai/app/handler"
+	"bitbucket.org/oaroz/hai/app/repository"
 	"bitbucket.org/oaroz/hai/app/service"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -25,7 +26,8 @@ func main() {
 		panic(fmt.Sprintf("Unable to connect to database: %v\n", err))
 	}
 	r := mux.NewRouter()
-	mService := service.NewService(db)
+	mRepository := repository.NewMessageRepository(db)
+	mService := service.NewMessageService(mRepository)
 	handler.RegisterHandlers(r, mService)
 	http.ListenAndServe(fmt.Sprintf("%s:%s", conf.Server.Host, conf.Server.Port), r)
 }
