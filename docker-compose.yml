@@ -5,3 +5,18 @@ services:
     build: .
     ports:
       - 8080:8080
+
+  hai-postgresql:
+    image: 'postgres:12.5'
+    volumes:
+      - hai-psql-data:/var/lib/postgresql/data
+      - ./database:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_USER=hai
+      - POSTGRES_PASSWORD=hai
+      - POSTGRES_DB=hai
+    ports: 
+      - "5433:5432"
+
+volumes:
+  hai-psql-data: {}     

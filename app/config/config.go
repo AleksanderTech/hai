@@ -11,6 +11,9 @@ type Config struct {
 		Host string `yaml:"host"`
 		Port string `yaml:"port"`
 	} `yaml:"server"`
+	Database struct {
+		Url string `yaml:"url"`
+	} `yaml:"database"`
 }
 
 func Load(configPath string) (*Config, error) {
