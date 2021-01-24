@@ -2,13 +2,14 @@ package service
 
 import (
 	"bitbucket.org/oaroz/hai/app/domain"
+	"bitbucket.org/oaroz/hai/app/model"
 	"bitbucket.org/oaroz/hai/app/repository"
 )
 
 type MessageService interface {
 	Get(email string) []domain.Message
 	Create(message domain.Message) domain.Message
-	Delete(id int64, code string)
+	Delete(id int64, code string) model.Response
 }
 
 type messageService struct {
@@ -20,8 +21,11 @@ func NewMessageService(r repository.MessageRepository) MessageService {
 }
 
 func (s messageService) Get(email string) []domain.Message {
-	// business logic goes here
-	return s.repo.Get(email)
+	if email == "" {
+		return s.repo.GetAll()
+	} else {
+		return s.repo.Get(email)
+	}
 }
 
 func (s messageService) Create(message domain.Message) domain.Message {
@@ -29,7 +33,7 @@ func (s messageService) Create(message domain.Message) domain.Message {
 	return s.repo.Create(message)
 }
 
-func (s messageService) Delete(id int64, code string) {
+func (s messageService) Delete(id int64, code string) model.Response {
 	// business logic goes here
-	s.repo.Delete(id, code)
+	return s.repo.Delete(id, code)
 }

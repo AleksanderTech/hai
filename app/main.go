@@ -15,8 +15,6 @@ import (
 
 func main() {
 	conf, err := config.Load("../config/app.yml")
-	fmt.Println(conf)
-
 	if err != nil {
 		panic(fmt.Sprintf("Unable to load config file: %v\n", err))
 	}
@@ -29,5 +27,6 @@ func main() {
 	mRepository := repository.NewMessageRepository(db)
 	mService := service.NewMessageService(mRepository)
 	handler.RegisterHandlers(r, mService)
+	fmt.Println("Server is running...")
 	http.ListenAndServe(fmt.Sprintf("%s:%s", conf.Server.Host, conf.Server.Port), r)
 }

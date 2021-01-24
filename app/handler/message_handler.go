@@ -6,6 +6,7 @@ import (
 
 	"bitbucket.org/oaroz/hai/app/mapper"
 	"bitbucket.org/oaroz/hai/app/model"
+	"bitbucket.org/oaroz/hai/app/validator"
 
 	"bitbucket.org/oaroz/hai/app/service"
 	"github.com/gorilla/mux"
@@ -24,6 +25,10 @@ func RegisterHandlers(r *mux.Router, service service.MessageService) {
 
 func (h handler) getMessages(w http.ResponseWriter, req *http.Request) {
 	email := req.URL.Query().Get("email")
+	if !validator.Email(email) {
+		http.Error(w, "Passed 'email' query param in the wrong format.", http.StatusBadRequest)
+		return
+	}
 	messages := h.service.Get(email)
 
 	json.NewEncoder(w).Encode(messages)
@@ -37,6 +42,10 @@ func (h handler) postMessage(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		http.Error(w, "Cannot Deserialize body to 'Message' format", http.StatusBadRequest)
 	}
+	if !validator.CreateMessageRequest(msgReq) {
+		http.Error(w, "Passed 'request body' in the wrong format.", http.StatusBadRequest)
+		return
+	}
 	var res model.CreateMessageResponse = mapper.MessageToCreateResponse(h.service.Create(mapper.CreateReqToMessage(msgReq)))
 
 	json.NewEncoder(w).Encode(res)
@@ -49,8 +58,12 @@ func (h handler) deleteMessage(w http.ResponseWriter, req *http.Request) {
 	err := json.NewDecoder(req.Body).Decode(&del)
 	if err != nil {
 		http.Error(w, "Cannot Deserialize body to 'DeleteMessage' format", http.StatusBadRequest)
+		return
 	}
-	h.service.Delete(del.Id, del.Code)
-
+	var response model.Response = h.service.Delete(del.Id, del.Code)
+	if response.ErrorMessage != "" {
+		http.Error(w, response.ErrorMessage, response.Code)
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
 }

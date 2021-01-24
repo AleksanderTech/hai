@@ -5,15 +5,16 @@ import (
 	"fmt"
 
 	"bitbucket.org/oaroz/hai/app/common"
-
 	"bitbucket.org/oaroz/hai/app/domain"
+	"bitbucket.org/oaroz/hai/app/model"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type MessageRepository interface {
 	Get(email string) []domain.Message
+	GetAll() []domain.Message
 	Create(message domain.Message) domain.Message
-	Delete(id int64, code string)
+	Delete(id int64, code string) model.Response
 }
 
 type messageRepository struct {
@@ -42,6 +43,24 @@ func (r messageRepository) Get(email string) []domain.Message {
 	return messages
 }
 
+func (r messageRepository) GetAll() []domain.Message {
+	messages := []domain.Message{}
+	sqlStatement := "SELECT id, title, code, content, email FROM MESSAGES"
+	rows, err := r.dbCon.Query(context.Background(), sqlStatement)
+	if err != nil {
+		panic(fmt.Sprintf("Query cannot be executed. Error: %v\n", err))
+	}
+	var message domain.Message
+	for rows.Next() {
+		err = rows.Scan(&message.ID, &message.Title, &message.Code, &message.Content, &message.Email)
+		if err != nil {
+			panic(fmt.Sprintf("Sql row cannot be mapped to struct. Error: %v\n", err))
+		}
+		messages = append(messages, message)
+	}
+	return messages
+}
+
 func (r messageRepository) Create(msg domain.Message) domain.Message {
 	msg.Code = common.RandomCode(20)
 	sqlStatement := "INSERT INTO messages(code, title, content, email) VALUES($1, $2, $3, $4) RETURNING id"
@@ -53,10 +72,17 @@ func (r messageRepository) Create(msg domain.Message) domain.Message {
 	return msg
 }
 
-func (r messageRepository) Delete(id int64, code string) {
+func (r messageRepository) Delete(id int64, code string) model.Response {
 	sqlStatement := "DELETE FROM messages WHERE id = $1 and code = $2"
-	_, err := r.dbCon.Exec(context.Background(), sqlStatement, id, code)
+	res, err := r.dbCon.Exec(context.Background(), sqlStatement, id, code)
 	if err != nil {
-		panic(fmt.Sprintf("Delete cannot be executed. Error: %v\n", err))
+		return model.Response{Value: nil, ErrorMessage: "Error during sql deletion.", Code: 500}
+	} else {
+		count := res.RowsAffected()
+		if count == 0 {
+			return model.Response{Value: nil, ErrorMessage: "Delete 'message' resource does not exist", Code: 404}
+		}
+
 	}
+	return model.Response{}
 }
