@@ -2,8 +2,10 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
+	"bitbucket.org/oaroz/hai/app/errors"
 	"bitbucket.org/oaroz/hai/app/mapper"
 	"bitbucket.org/oaroz/hai/app/model"
 	"bitbucket.org/oaroz/hai/app/validator"
@@ -29,8 +31,11 @@ func (h handler) getMessages(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Passed 'email' query param in the wrong format.", http.StatusBadRequest)
 		return
 	}
-	messages := h.service.Get(email)
-
+	messages, err := h.service.Get(email)
+	if err != nil {
+		fmt.Println(err.(errors.HaiError))
+		fmt.Println(err.(errors.HaiError).Message)
+	}
 	json.NewEncoder(w).Encode(messages)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -46,8 +51,12 @@ func (h handler) postMessage(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Passed 'request body' in the wrong format.", http.StatusBadRequest)
 		return
 	}
-	var res model.CreateMessageResponse = mapper.MessageToCreateResponse(h.service.Create(mapper.CreateReqToMessage(msgReq)))
-
+	msg, err := h.service.Create(mapper.CreateReqToMessage(msgReq))
+	if err != nil {
+		fmt.Println(err.(errors.HaiError))
+		fmt.Println(err.(errors.HaiError).Message)
+	}
+	var res model.CreateMessageResponse = mapper.MessageToCreateResponse(msg)
 	json.NewEncoder(w).Encode(res)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -60,10 +69,10 @@ func (h handler) deleteMessage(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Cannot Deserialize body to 'DeleteMessage' format", http.StatusBadRequest)
 		return
 	}
-	var response model.Response = h.service.Delete(del.Id, del.Code)
-	if response.ErrorMessage != "" {
-		http.Error(w, response.ErrorMessage, response.Code)
-		return
+	err = h.service.Delete(del.Id, del.Code)
+	if err != nil {
+		fmt.Println(err.(errors.HaiError))
+		fmt.Println(err.(errors.HaiError).Message)
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
