@@ -1,6 +1,8 @@
+app:
+  version: 1.0.0
 server:
   host: 127.0.0.1
   port: 8080
 database:
-  url: "postgresql://hai:hai@localhost:5432/hai"
+  url: "postgresql://hai:hai@hai-postgresql:5432/hai"
   

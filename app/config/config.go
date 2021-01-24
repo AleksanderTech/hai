@@ -7,6 +7,9 @@ import (
 )
 
 type Config struct {
+	App struct {
+		Version string `yaml:"version"`
+	} `yaml:"version"`
 	Server struct {
 		Host string `yaml:"host"`
 		Port string `yaml:"port"`
