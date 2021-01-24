@@ -1,48 +1,35 @@
 package service
 
 import (
-	"context"
-	"errors"
-	"fmt"
-
 	"bitbucket.org/oaroz/hai/app/domain"
 	"bitbucket.org/oaroz/hai/app/repository"
-	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type MessageService interface {
-	Get(email string) ([]domain.Message, error)
-	Create(message domain.Message) (domain.Message, error)
-	Delete(id string, code string) (domain.Message, error)
+	Get(email string) []domain.Message
+	Create(message domain.Message) domain.Message
+	Delete(id int64, code string)
 }
 
 type messageService struct {
 	repo repository.MessageRepository
 }
 
-func NewMessageService(dbCon *pgxpool.Pool) MessageService {
-	return messageService{dbCon: dbCon}
+func NewMessageService(r repository.MessageRepository) MessageService {
+	return messageService{repo: r}
 }
 
-func (s messageService) Get(email string) ([]domain.Message, error) {
-	messages := []domain.Message{}
-	rows, err := s.dbCon.Query(context.Background(), "SELECT * FROM MESSAGES WHERE messages.email=$1", email)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Query cannot be executed. Error: %v\n", err))
-	}
-	var message domain.Message
-	for rows.Next() {
-		err = rows.Scan(&message.ID, &message.Title, &message.Content, &message.Email)
-		messages = append(messages, message)
-	}
-	return messages, nil
+func (s messageService) Get(email string) []domain.Message {
+	// business logic goes here
+	return s.repo.Get(email)
 }
 
-func (s messageService) Create(message domain.Message) (domain.Message, error) {
-	m := domain.Message{ID: 1, Title: "Title", Content: "Content", Email: "Email"} // mocked
-	return m, nil
+func (s messageService) Create(message domain.Message) domain.Message {
+	// business logic goes here
+	return s.repo.Create(message)
 }
 
-func (s messageService) Delete(id string, code string) (domain.Message, error) { // mocked
-	return domain.Message{}, nil
+func (s messageService) Delete(id int64, code string) {
+	// business logic goes here
+	s.repo.Delete(id, code)
 }
