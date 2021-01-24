@@ -3,34 +3,42 @@ package validator
 import (
 	"regexp"
 
+	"bitbucket.org/oaroz/hai/app/errors"
 	"bitbucket.org/oaroz/hai/app/model"
 )
 
 var regexpEmail = regexp.MustCompile("^(.)+[@][^@]+[.][a-zA-Z0-9]+$")
 
-func Email(email string) bool {
-	if email == "" {
-		return true
-	}
-
+func EmailFormat(email string) bool {
 	if !regexpEmail.MatchString(email) {
 		return false
 	}
 	return true
 }
 
-func CreateMessageRequest(req model.CreateMessageRequest) bool {
+func CreateMessageRequest(req model.CreateMessageRequest) []string {
+	errs := []string{}
 	if req.Content == "" {
-		return false
+		errs = append(errs, errors.InvalidMessageContent)
 	}
-	if len(req.Title) < 2 {
-		return false
+	if req.Title == "" {
+		errs = append(errs, errors.InvalidMessageTitle)
 	}
 	if req.Email == "" {
-		return false
+		errs = append(errs, errors.EmptyEmail)
+	} else if !regexpEmail.MatchString(req.Email) {
+		errs = append(errs, errors.InvalidEmailFormat)
 	}
-	if !regexpEmail.MatchString(req.Email) {
-		return false
+	return errs
+}
+
+func DeleteMessageRequest(req model.DeleteMessageRequest) []string {
+	errs := []string{}
+	if req.Id == 0 {
+		errs = append(errs, errors.RequiredFieldOf("id", "DeleteMessageRequest"))
 	}
-	return true
+	if req.Code == "" {
+		errs = append(errs, errors.EmptyFieldOf("code", "DeleteMessageRequest"))
+	}
+	return errs
 }

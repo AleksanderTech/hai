@@ -6,7 +6,7 @@ type HaiError struct {
 	ErrorCode string
 }
 
-func New(errorCode string) HaiError {
+func NewError(errorCode string) HaiError {
 	return HaiError{ErrorCode: errorCode}
 }
 

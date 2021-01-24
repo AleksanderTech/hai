@@ -1,7 +1,11 @@
 package errors
 
 const (
-	MessageNotFound          string = "Message_Not_found"
-	DeleteNonexistentMessage string = "Delete_Nonexistent_Message"
-	InternalDbError          string = "Internal_Db_Error"
+	MessageNotFound             string = "MessageNotfound"
+	DeleteNonexistentMessage    string = "DeleteNonexistentMessage"
+	DatabaseActionError         string = "DatabaseActionError"
+	InvalidCreateMessageRequest string = "InvalidCreateMessageRequest"
+	InvalidBodyRequest          string = "InvalidBodyRequest"
+	InvalidQueryParam           string = "InvalidQueryParam"
+	InternalServerError         string = "InternalServerError"
 )

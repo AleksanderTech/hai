@@ -2,7 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 
 	"bitbucket.org/oaroz/hai/app/errors"
@@ -27,52 +27,70 @@ func RegisterHandlers(r *mux.Router, service service.MessageService) {
 
 func (h handler) getMessages(w http.ResponseWriter, req *http.Request) {
 	email := req.URL.Query().Get("email")
-	if !validator.Email(email) {
-		http.Error(w, "Passed 'email' query param in the wrong format.", http.StatusBadRequest)
-		return
+
+	if email != "" {
+		if !validator.EmailFormat(email) {
+			ReturnJson(
+				w,
+				errors.NewErrResponse([]string{errors.InvalidQueryParam}, []string{errors.InvalidEmailFormat}),
+				http.StatusBadRequest)
+			return
+		}
 	}
 	messages, err := h.service.Get(email)
+
 	if err != nil {
-		fmt.Println(err.(errors.HaiError))
-		fmt.Println(err.(errors.HaiError).Message)
+		HandleErrors(err.(errors.HaiError), w)
+		return
 	}
-	json.NewEncoder(w).Encode(messages)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	ReturnJson(w, messages, http.StatusOK)
 }
 
 func (h handler) postMessage(w http.ResponseWriter, req *http.Request) {
 	var msgReq model.CreateMessageRequest
 	err := json.NewDecoder(req.Body).Decode(&msgReq)
+
 	if err != nil {
-		http.Error(w, "Cannot Deserialize body to 'Message' format", http.StatusBadRequest)
+		log.Printf("Cannot Deserialize. Invalid json. %v", err)
+		ReturnJson(w, errors.NewErrResponse([]string{errors.InvalidBodyRequest}, []string{errors.InvalidJson}), http.StatusBadRequest)
+		return
 	}
-	if !validator.CreateMessageRequest(msgReq) {
-		http.Error(w, "Passed 'request body' in the wrong format.", http.StatusBadRequest)
+	errs := validator.CreateMessageRequest(msgReq)
+
+	if len(errs) != 0 {
+		ReturnJson(w, errors.NewErrResponse([]string{errors.InvalidBodyRequest}, errs), http.StatusBadRequest)
 		return
 	}
 	msg, err := h.service.Create(mapper.CreateReqToMessage(msgReq))
-	if err != nil {
-		fmt.Println(err.(errors.HaiError))
-		fmt.Println(err.(errors.HaiError).Message)
-	}
 	var res model.CreateMessageResponse = mapper.MessageToCreateResponse(msg)
-	json.NewEncoder(w).Encode(res)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+
+	if err != nil {
+		HandleErrors(err.(errors.HaiError), w)
+		return
+	}
+	ReturnJson(w, res, http.StatusCreated)
 }
 
 func (h handler) deleteMessage(w http.ResponseWriter, req *http.Request) {
 	var del model.DeleteMessageRequest
 	err := json.NewDecoder(req.Body).Decode(&del)
+
 	if err != nil {
-		http.Error(w, "Cannot Deserialize body to 'DeleteMessage' format", http.StatusBadRequest)
+		log.Printf("Cannot Deserialize. Invalid json. %v", err)
+		ReturnJson(w, errors.NewErrResponse([]string{errors.InvalidBodyRequest}, []string{errors.InvalidJson}), http.StatusBadRequest)
+		return
+	}
+	errs := validator.DeleteMessageRequest(del)
+
+	if len(errs) != 0 {
+		ReturnJson(w, errors.NewErrResponse([]string{errors.InvalidBodyRequest}, errs), http.StatusBadRequest)
 		return
 	}
 	err = h.service.Delete(del.Id, del.Code)
+
 	if err != nil {
-		fmt.Println(err.(errors.HaiError))
-		fmt.Println(err.(errors.HaiError).Message)
+		HandleErrors(err.(errors.HaiError), w)
+		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	ReturnJson(w, nil, http.StatusNoContent)
 }
