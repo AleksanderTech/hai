@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -16,26 +17,44 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
+type App struct {
+	Router *mux.Router
+	Db     *pgxpool.Pool
+	Conf   *config.Config
+}
+
 func main() {
-	conf, err := config.Load("../config/app.yml")
+	configPathPtr := flag.String("configPath", "../config/app.yml", "Path to config file.")
+	flag.Parse()
+	app := App{}
+	app.Init(*configPathPtr)
+	app.Start()
+}
+
+func (app *App) Init(path string) {
+	var err error
+	app.Conf, err = config.Load(path)
 
 	if err != nil {
 		log.Fatalf("Unable to load config file: %v\n", err)
 	}
-	db, err := tryConnectDb(5, conf.Database.Url)
+	app.Db, err = app.tryConnectDb(5, app.Conf.Database.Url)
 
 	if err != nil {
-		log.Fatalf(fmt.Sprintf(err.Error()))
+		log.Fatal(err)
 	}
-	r := mux.NewRouter()
-	mRepository := repository.NewMessageRepository(db)
+	app.Router = mux.NewRouter()
+	mRepository := repository.NewMessageRepository(app.Db)
 	mService := service.NewMessageService(mRepository)
-	handler.RegisterHandlers(r, mService)
-	log.Println("Server started...")
-	http.ListenAndServe(fmt.Sprintf("%s:%s", conf.Server.Host, conf.Server.Port), r)
+	handler.RegisterHandlers(app.Router, mService)
 }
 
-func tryConnectDb(tries int32, url string) (*pgxpool.Pool, error) {
+func (app *App) Start() {
+	log.Println("Server started...")
+	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", app.Conf.Server.Host, app.Conf.Server.Port), app.Router))
+}
+
+func (a *App) tryConnectDb(tries int32, url string) (*pgxpool.Pool, error) {
 	for tries > 0 {
 		db, err := pgxpool.Connect(context.Background(), url)
 		if err != nil {
